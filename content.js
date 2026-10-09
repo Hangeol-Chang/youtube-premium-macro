@@ -80,7 +80,6 @@
     if (el.getAttribute) {
       const role = el.getAttribute('role');
       if (role === 'button' || role === 'link') return true;
-      if (el.hasAttribute('data-test') || el.hasAttribute('data-testid')) return true;
       const tabindex = el.getAttribute('tabindex');
       if (tabindex != null && tabindex !== '-1') return true;
     }
