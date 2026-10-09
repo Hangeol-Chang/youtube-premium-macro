@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Apple YouTube 구독 연장 반복기</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #1c1c1e;
+      --muted: #6b6b70;
+      --line: #e3e3e6;
+      --primary: #0a84ff;
+      --primary-fg: #ffffff;
+      --danger: #ff3b30;
+      --ok: #34c759;
+      --warn: #ff9f0a;
+      --info: #5e5ce6;
+      --panel: #f7f7f9;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", Roboto, sans-serif;
+      font-size: 13px;
+    }
+    body { width: 380px; }
+
+    .head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .head h1 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    .badge {
+      flex: 0 0 auto;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--muted);
+      white-space: nowrap;
+    }
+    .badge.idle { background: #8e8e93; }
+    .badge.running { background: var(--primary); }
+    .badge.done { background: var(--ok); }
+    .badge.error { background: var(--danger); }
+
+    .form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 12px 14px;
+    }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .label { font-size: 12px; font-weight: 600; }
+    .label em { font-style: normal; color: var(--muted); font-weight: 400; }
+    .hint { font-size: 10px; color: var(--muted); }
+    input[type="number"] {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--fg);
+      outline: none;
+    }
+    input[type="number"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      padding: 0 14px 12px;
+    }
+    .btn {
+      flex: 1;
+      padding: 10px 12px;
+      border: none;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: #8e8e93;
+      transition: filter .12s ease;
+    }
+    .btn:not(:disabled):hover { filter: brightness(0.94); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn.primary { background: var(--primary); }
+    .btn.danger { background: var(--danger); }
+
+    .message {
+      margin: 0 14px 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.4;
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+    .message.error { color: var(--danger); border-color: rgba(255,59,48,.35); background: rgba(255,59,48,.08); }
+    .message.ok { color: #1f7a37; border-color: rgba(52,199,89,.35); background: rgba(52,199,89,.10); }
+
+    .progress {
+      margin: 0 14px 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .progress strong { color: var(--fg); font-size: 14px; }
+
+    .logs { padding: 0 14px 14px; }
+    .logs-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .logs-tools { display: flex; gap: 6px; }
+    .mini {
+      padding: 4px 8px;
+      font-size: 11px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--fg);
+      cursor: pointer;
+    }
+    .mini:hover { background: var(--panel); }
+
+    .log-list {
+      height: 220px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfbfd;
+      padding: 6px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    .log-row { display: flex; gap: 6px; padding: 1px 2px; white-space: pre-wrap; word-break: break-word; }
+    .log-time { color: #9a9aa0; flex: 0 0 auto; }
+    .log-type { flex: 0 0 auto; font-weight: 700; }
+    .log-msg { flex: 1 1 auto; }
+    .log-info .log-type { color: var(--info); }
+    .log-success .log-type { color: #1f7a37; }
+    .log-warning .log-type { color: #a86500; }
+    .log-error .log-type { color: var(--danger); }
+    .log-empty { color: var(--muted); padding: 6px 2px; }
+  </style>
+</head>
+<body>
+  <header class="head">
+    <h1>Apple YouTube<br />구독 연장 반복기</h1>
+    <div id="statusBadge" class="badge idle">대기 중</div>
+  </header>
+
+  <section class="form">
+    <label class="field">
+      <span class="label">반복 횟수 <em>(0 = 무한)</em></span>
+      <input id="total" type="number" min="0" max="10000" step="1" value="0" inputmode="numeric" />
+      <span class="hint">0 ~ 10,000</span>
+    </label>
+    <label class="field">
+      <span class="label">완료 후 대기 (초)</span>
+      <input id="waitSec" type="number" min="0.5" max="30" step="0.5" value="2" inputmode="decimal" />
+      <span class="hint">0.5 ~ 30초</span>
+    </label>
+  </section>
+
+  <section class="actions">
+    <button id="startBtn" class="btn primary" type="button">시작</button>
+    <button id="stopBtn" class="btn danger" type="button" disabled>중지</button>
+  </section>
+
+  <div id="message" class="message" hidden></div>
+
+  <section class="progress">
+    <span>진행 상황</span>
+    <strong id="progressText">0/∞</strong>
+  </section>
+
+  <section class="logs">
+    <div class="logs-head">
+      <span>실행 로그</span>
+      <div class="logs-tools">
+        <button id="clearBtn" class="mini" type="button">로그 삭제</button>
+        <button id="csvBtn" class="mini" type="button">CSV 다운로드</button>
+      </div>
+    </div>
+    <div id="logList" class="log-list" aria-live="polite"></div>
+  </section>
+
+  <script src="popup.js"></script>
+</body>
+</html>

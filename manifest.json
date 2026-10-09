@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Apple YouTube 구독 연장 반복기",
+  "version": "1.0.0",
+  "description": "Apple 구독 관리 페이지에서 YouTube 구독 Renew → Confirm → 결제 오류 Cancel 을 반복합니다. 팝업에서 사용자가 시작했을 때만 동작합니다.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://apple.com/*",
+    "https://*.apple.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Apple YouTube 구독 연장 반복기",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://apple.com/*",
+        "https://*.apple.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_idle"
+    }
+  ]
+}
